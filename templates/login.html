@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Login - Quiz Generator</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,600;0,9..144,700;0,9..144,900;1,9..144,700&family=Outfit:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+</head>
+<body class="auth-page">
+  <div class="auth-card">
+    <div class="auth-card-inner">
+      <div class="auth-logo-area">
+        <div class="auth-logo-mark">Q</div>
+        <div class="auth-app-name">Quiz Generator</div>
+        <div class="auth-tagline">ML-Powered · Books · Articles · Notes</div>
+      </div>
+
+      <div class="auth-divider"></div>
+
+      <h2 class="auth-heading">Welcome back</h2>
+      <p class="auth-sub">Sign in to access your quiz dashboard.</p>
+
+      {% if error %}
+      <div class="alert alert-error" style="margin-bottom:16px;">Warning: {{ error }}</div>
+      {% endif %}
+
+      <form method="post" class="form-stack">
+        <div class="field">
+          <label for="username">Username</label>
+          <input id="username" name="username" type="text" placeholder="Enter your username" required autocomplete="username">
+        </div>
+        <div class="field">
+          <label for="password">Password</label>
+          <input id="password" name="password" type="password" placeholder="Enter your password" required autocomplete="current-password">
+        </div>
+        <button type="submit" class="btn btn-teal btn-block" style="margin-top:6px; padding:15px 28px; font-size:.95rem;">
+          Enter Dashboard ->
+        </button>
+      </form>
+
+      <div class="demo-creds">
+        <div class="demo-creds-title">Demo credentials</div>
+        <div class="demo-row"><span>Username</span><code>admin</code></div>
+        <div class="demo-row"><span>Password</span><code>admin123</code></div>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

@@ -1,0 +1,367 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dashboard - Quiz Generator</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,600;0,9..144,700;0,9..144,900;1,9..144,700&family=Outfit:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+</head>
+<body class="dash-page">
+  <nav class="topnav">
+    <div class="nav-brand">
+      <div class="nav-logo">Q</div>
+      <div>
+        <div class="nav-title-text">Quiz Generator</div>
+        <div class="nav-sub">ML-Powered · Books · Articles · Notes</div>
+      </div>
+    </div>
+    <div class="nav-right">
+      <div class="nav-user">
+        <div class="nav-avatar">{{ username[0] }}</div>
+        <span class="nav-username">{{ username }}</span>
+      </div>
+      <form method="post" action="{{ url_for('logout') }}" style="margin:0;">
+        <button type="submit" class="btn btn-ghost btn-sm">Sign out</button>
+      </form>
+    </div>
+  </nav>
+
+  <section class="dash-hero">
+    <div class="dash-hero-inner">
+      <div class="dash-eyebrow">
+        <span class="eye-dot"></span>
+        ML Quiz Studio · Active Session
+      </div>
+      <h1>
+        Quiz Generator From Content,<br>
+        <span class="hero-gradient">Books or Article</span><br>
+        Using Machine Learning
+      </h1>
+      <p class="dash-hero-desc">
+        Paste a passage, chapter, or upload a file - our TF-IDF engine surfaces the most important concepts and converts them into clean multiple-choice questions.
+      </p>
+    </div>
+  </section>
+
+  <div class="stats-bar">
+    <div class="stat-item">
+      <span class="stat-num gold">{{ form_values.question_count }}</span>
+      <span class="stat-lbl">Target questions</span>
+    </div>
+    <div class="stat-item">
+      <span class="stat-num">{{ form_values.difficulty | capitalize }}</span>
+      <span class="stat-lbl">Difficulty</span>
+    </div>
+    <div class="stat-item">
+      <span class="stat-num teal">{{ quiz | length }}</span>
+      <span class="stat-lbl">Generated</span>
+    </div>
+  </div>
+
+  {% if not quiz %}
+  <div class="input-section">
+    <div class="sec-eyebrow">Source Content</div>
+    <h2 class="sec-title">Paste or upload your material</h2>
+    <p class="sec-subtitle">
+      Stronger results come from factual content with names, dates, definitions, and clear statements.
+    </p>
+
+    {% if error %}
+    <div class="alert alert-error" style="margin-bottom:20px;">Warning: {{ error }}</div>
+    {% endif %}
+
+    <div class="input-card">
+      <form method="post" enctype="multipart/form-data" id="quizForm">
+        <div class="input-card-body">
+          <div class="field">
+            <label>Upload a file</label>
+            <label class="file-zone" id="fileZone">
+              <input type="file" name="source_file" accept=".txt,.pdf" id="fileInput">
+              <div class="file-zone-ui">
+                <span class="file-icon">[FILE]</span>
+                <span class="file-text">Drop your file here or click to browse</span>
+                <span class="file-hint">.txt and .pdf supported</span>
+              </div>
+            </label>
+            <div class="file-name-tag" id="fileTag">Selected: <span id="fileNameSpan"></span></div>
+          </div>
+
+          <div class="or-split">or paste text below</div>
+
+          <div class="field">
+            <label for="manual_text">Article, chapter, or study notes</label>
+            <textarea id="manual_text" name="manual_text" rows="10"
+              placeholder="Paste study content here - a Wikipedia article, textbook chapter, lecture notes, or any factual passage works best...">{{ form_values.manual_text }}</textarea>
+          </div>
+
+          <div class="feature-grid">
+            <div class="feature-tile">
+              <strong>Upload or paste</strong>
+              <span>Work with notes, articles, chapters, or PDFs.</span>
+            </div>
+            <div class="feature-tile">
+              <strong>Adjust difficulty</strong>
+              <span>Shape the quiz around short or more precise answers.</span>
+            </div>
+            <div class="feature-tile">
+              <strong>Review instantly</strong>
+              <span>See answers, explanations, and exportable results in one place.</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="settings-strip">
+          <div class="settings-head">Quiz Settings</div>
+
+          <div class="field">
+            <label>Number of questions</label>
+            <div class="num-wrap">
+              <button type="button" class="step-btn" onclick="stepNum('question_count',-1)" aria-label="Decrease question count">-</button>
+              <input type="number" id="question_count" name="question_count" min="3" max="15" value="{{ form_values.question_count }}">
+              <button type="button" class="step-btn" onclick="stepNum('question_count',1)" aria-label="Increase question count">+</button>
+            </div>
+          </div>
+
+          <div class="field">
+            <label>Difficulty level</label>
+            <div class="level-group">
+              <span>
+                <input class="level-radio" type="radio" name="difficulty" id="lvl-easy" value="easy" {% if form_values.difficulty == 'easy' %}checked{% endif %}>
+                <label class="level-lbl" for="lvl-easy">
+                  <span class="lv-icon">E</span>
+                  <span class="lv-name">Easy</span>
+                  <span class="lv-desc">1-2 word answers</span>
+                </label>
+              </span>
+              <span>
+                <input class="level-radio" type="radio" name="difficulty" id="lvl-medium" value="medium" {% if form_values.difficulty == 'medium' %}checked{% endif %}>
+                <label class="level-lbl" for="lvl-medium">
+                  <span class="lv-icon">M</span>
+                  <span class="lv-name">Medium</span>
+                  <span class="lv-desc">1-3 word answers</span>
+                </label>
+              </span>
+              <span>
+                <input class="level-radio" type="radio" name="difficulty" id="lvl-hard" value="hard" {% if form_values.difficulty == 'hard' %}checked{% endif %}>
+                <label class="level-lbl" for="lvl-hard">
+                  <span class="lv-icon">H</span>
+                  <span class="lv-name">Hard</span>
+                  <span class="lv-desc">2-4 word answers</span>
+                </label>
+              </span>
+            </div>
+          </div>
+
+          <input type="hidden" name="min_sentence_words" value="{{ form_values.min_sentence_words }}">
+        </div>
+
+        <div class="submit-bar">
+          <button type="submit" class="generate-btn">
+            Generate Quiz
+            <span class="gen-arrow">-></span>
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+  {% endif %}
+
+  {% if quiz %}
+  <section class="results-hero">
+    <div class="results-hero-inner">
+      <div class="results-badge">Quiz Ready</div>
+      <h1>Your Quiz is Ready</h1>
+      <div class="results-meta">
+        <span class="rmeta-pill">{{ quiz | length }} questions</span>
+        <span class="rmeta-pill">{{ form_values.difficulty | capitalize }}</span>
+        <span class="rmeta-pill">Answers included</span>
+      </div>
+    </div>
+  </section>
+
+  <section class="results-overview">
+    <div class="overview-card">
+      <span class="overview-kicker">Source snapshot</span>
+      <h2>{{ source_name }}</h2>
+      <div class="overview-metrics">
+        <div>
+          <strong>{{ source_metrics.words }}</strong>
+          <span>Words</span>
+        </div>
+        <div>
+          <strong>{{ source_metrics.sentences }}</strong>
+          <span>Sentences</span>
+        </div>
+        <div>
+          <strong>{{ source_metrics.estimated_read_minutes }}</strong>
+          <span>Read min</span>
+        </div>
+      </div>
+    </div>
+    <div class="overview-card">
+      <span class="overview-kicker">Study actions</span>
+      <h2>Reuse this quiz anywhere</h2>
+      <p class="overview-copy">
+        Print, copy, or download a text version for revision packs, LMS uploads, or offline practice.
+      </p>
+      <div class="results-toolbar">
+        <a href="{{ url_for('dashboard') }}" class="btn btn-ghost btn-lg"><- New Quiz</a>
+        <button type="button" id="toggleAnswersBtn" class="btn btn-ghost btn-lg">Hide Answers</button>
+        <button type="button" id="copyQuizBtn" class="btn btn-teal btn-lg">Copy Quiz</button>
+        <button type="button" id="downloadQuizBtn" class="btn btn-gold btn-lg">Download .txt</button>
+        <button type="button" onclick="window.print()" class="btn btn-ghost btn-lg">Print</button>
+      </div>
+    </div>
+  </section>
+
+  <div class="results-actions">
+    <div class="results-note">Tip: hide answers before printing if you want a student-ready worksheet.</div>
+  </div>
+
+  <div class="results-list">
+    {% for item in quiz %}
+    {% set letters = ['A', 'B', 'C', 'D'] %}
+    <article class="quiz-card">
+      <div class="quiz-card-head">
+        <div class="q-badge">{{ "%02d"|format(loop.index) }}</div>
+        <p class="q-text">{{ item.question }}</p>
+      </div>
+      <div class="quiz-card-body">
+        <ul class="options">
+          {% for option in item.options %}
+          <li class="{% if option == item.answer %}correct-option{% endif %}">
+            <span class="opt-letter">{{ letters[loop.index0] if loop.index0 < 4 else '*' }}</span>
+            {{ option }}
+          </li>
+          {% endfor %}
+        </ul>
+        <div class="answer-strip js-answer-strip">
+          <div class="answer-label">Explanation</div>
+          <p class="answer-answer">Correct answer: <strong>{{ item.answer }}</strong></p>
+          <p class="answer-explain">{{ item.explanation }}</p>
+        </div>
+      </div>
+    </article>
+    {% endfor %}
+  </div>
+
+  <div class="results-actions" style="padding-bottom:60px;">
+    <a href="{{ url_for('dashboard') }}" class="btn btn-teal btn-lg"><- Back to Dashboard</a>
+  </div>
+  {% endif %}
+
+  <script>
+    function stepNum(id, delta) {
+      const el = document.getElementById(id);
+      if (!el) return;
+      const min = parseInt(el.min, 10) || 1;
+      const max = parseInt(el.max, 10) || 999;
+      const val = parseInt(el.value, 10) || 0;
+      el.value = Math.min(max, Math.max(min, val + delta));
+    }
+
+    const fileInput = document.getElementById('fileInput');
+    const fileZone = document.getElementById('fileZone');
+    const fileTag = document.getElementById('fileTag');
+    const fileNameSp = document.getElementById('fileNameSpan');
+
+    if (fileInput) {
+      fileInput.addEventListener('change', function () {
+        if (this.files && this.files.length > 0) {
+          fileNameSp.textContent = this.files[0].name;
+          fileTag.style.display = 'flex';
+          fileZone.querySelector('.file-zone-ui').style.borderColor = 'var(--teal)';
+          fileZone.querySelector('.file-zone-ui').style.background = 'var(--teal-dim)';
+        }
+      });
+    }
+
+    if (fileZone) {
+      fileZone.addEventListener('dragover', function (event) {
+        event.preventDefault();
+      });
+      fileZone.addEventListener('dragleave', function () {
+        if (!fileInput.files || fileInput.files.length === 0) {
+          fileZone.querySelector('.file-zone-ui').style.borderColor = '';
+          fileZone.querySelector('.file-zone-ui').style.background = '';
+        }
+      });
+    }
+
+    document.querySelectorAll('.quiz-card').forEach((card, index) => {
+      card.style.animationDelay = (index * 0.06) + 's';
+    });
+
+    const answerStrips = document.querySelectorAll('.js-answer-strip');
+    const toggleAnswersBtn = document.getElementById('toggleAnswersBtn');
+    let answersVisible = true;
+
+    if (toggleAnswersBtn) {
+      toggleAnswersBtn.addEventListener('click', function () {
+        answersVisible = !answersVisible;
+        answerStrips.forEach(strip => {
+          strip.hidden = !answersVisible;
+        });
+        this.textContent = answersVisible ? 'Hide Answers' : 'Show Answers';
+      });
+    }
+
+    function buildQuizText() {
+      const cards = document.querySelectorAll('.quiz-card');
+      const lines = ['Quiz Generator Export', ''];
+
+      cards.forEach((card, index) => {
+        const question = card.querySelector('.q-text')?.textContent?.trim() || '';
+        const options = Array.from(card.querySelectorAll('.options li')).map(option => option.textContent.trim());
+        const answer = card.querySelector('.answer-answer strong')?.textContent?.trim() || '';
+        const explanation = card.querySelector('.answer-explain')?.textContent?.trim() || '';
+
+        lines.push(`Question ${index + 1}: ${question}`);
+        options.forEach((option, optionIndex) => {
+          const letter = ['A', 'B', 'C', 'D'][optionIndex] || '-';
+          lines.push(`  ${letter}. ${option}`);
+        });
+        lines.push(`Answer: ${answer}`);
+        lines.push(`Explanation: ${explanation}`);
+        lines.push('');
+      });
+
+      return lines.join('\n');
+    }
+
+    const copyQuizBtn = document.getElementById('copyQuizBtn');
+    if (copyQuizBtn) {
+      copyQuizBtn.addEventListener('click', async function () {
+        const originalLabel = this.textContent;
+        try {
+          await navigator.clipboard.writeText(buildQuizText());
+          this.textContent = 'Copied';
+        } catch (error) {
+          this.textContent = 'Copy failed';
+        }
+        window.setTimeout(() => {
+          this.textContent = originalLabel;
+        }, 1600);
+      });
+    }
+
+    const downloadQuizBtn = document.getElementById('downloadQuizBtn');
+    if (downloadQuizBtn) {
+      downloadQuizBtn.addEventListener('click', function () {
+        const blob = new Blob([buildQuizText()], { type: 'text/plain;charset=utf-8' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = 'quiz-generator-export.txt';
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+        URL.revokeObjectURL(url);
+      });
+    }
+  </script>
+</body>
+</html>
